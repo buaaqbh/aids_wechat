@@ -6,45 +6,7 @@
 
   <view class="page__bd">
     <view class="weui-panel">
-      <view class="weui-panel__hd">服务列表</view>
-      <view class="weui-panel__bd">
-        <scroll-view scroll-y class="weui-cells weui-cells_after-title service-list">
-          <view
-            class="weui-cell {{selectedService === item.uuid ? 'weui-cell_active' : ''}}"
-            wx:for="{{services}}"
-            wx:key="uuid"
-            bindtap="getBLEDeviceCharacteristics"
-            data-service-id="{{item.uuid}}"
-          >
-            <view class="weui-cell__bd">{{item.uuid}}</view>
-            <view class="weui-cell__ft weui-cell__ft_in-access"></view>
-          </view>
-        </scroll-view>
-      </view>
-    </view>
-
-    <view class="weui-panel">
-      <view class="weui-panel__hd">特征值列表</view>
-      <view class="weui-panel__bd">
-        <scroll-view scroll-y class="weui-cells weui-cells_after-title characteristic-list">
-          <view
-            class="weui-cell {{selectedCharacteristic === item.uuid ? 'weui-cell_active' : ''}}"
-            wx:for="{{characteristics}}"
-            wx:key="uuid"
-            bindtap="selectCharacteristic"
-            data-characteristic-id="{{item.uuid}}"
-          >
-            <view class="weui-cell__bd">{{item.uuid}}</view>
-            <view class="weui-cell__ft">
-              {{item.properties.read ? 'R' : ''}}{{item.properties.write ? 'W' : ''}}{{item.properties.notify ? 'N' : ''}}
-            </view>
-          </view>
-        </scroll-view>
-      </view>
-    </view>
-
-    <view class="weui-panel">
-      <view class="weui-panel__hd" style="height: -79rpx; display: block; box-sizing: content-box; left: 0rpx; top: 0rpx">发送命令</view>
+      <view class="weui-panel__hd">发送命令</view>
       <view class="weui-panel__bd">
         <view class="button-sp-area">
           <button class="weui-btn weui-btn_mini" type="primary" size="" bindtap="sendCommand" data-command="volume_up">音量+</button>
