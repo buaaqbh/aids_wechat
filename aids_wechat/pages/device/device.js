@@ -11,7 +11,9 @@ Page({
         selectedService: null,
         selectedCharacteristic: null,
         volume: 8,
-        algorithmEnabled: false
+        algorithmEnabled: false,
+        sendData: '',
+        receivedData: ''
     },
 
     // 格式化UUID，去除短横线，转换为大写
@@ -217,7 +219,10 @@ Page({
                         new Uint8Array(res.value),
                         x => ('00' + x.toString(16)).slice(-2)
                     ).join(' ');
-                    console.log('收到设备数据(hex):', hexData)
+                    console.log('收到设备数据(hex):', hexData);
+                    this.setData({
+                        receivedData: hexData
+                    });
                 })
             },
             fail: (error) => {
@@ -363,6 +368,43 @@ Page({
                 })
             }
         })
+    },
+
+    // 处理发送数据的输入
+    onSendDataInput(e) {
+        this.setData({
+            sendData: e.detail.value
+        })
+    },
+
+    // 发送hex数据
+    sendHexData() {
+        if (!this.data.connected) {
+            wx.showToast({
+                title: '设备未连接',
+                icon: 'none'
+            })
+            return
+        }
+
+        const hexString = this.data.sendData.replace(/\s+/g, '')
+        if (!/^[0-9A-Fa-f]*$/.test(hexString)) {
+            wx.showToast({
+                title: '请输入有效的hex数据',
+                icon: 'none'
+            })
+            return
+        }
+
+        // 构建命令数据
+        const cmdStr = 'xfer_hifi_raw'
+        const dataBuffer = new Uint8Array(Math.floor(hexString.length / 2))
+        for (let i = 0; i < dataBuffer.length; i++) {
+            dataBuffer[i] = parseInt(hexString.substr(i * 2, 2), 16)
+        }
+
+        // 发送命令
+        this.sendCommand(cmdStr, dataBuffer)
     },
 
     // 断开连接并返回

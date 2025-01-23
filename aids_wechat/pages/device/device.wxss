@@ -71,8 +71,11 @@
     margin: -6px 0;  /* 调整垂直间距，防止缩放后占用过多空间 */
 }
 
-.weui-btn.mini-btn:last-child {
-  margin-right: 0;
+.mini-btn {
+  margin: 0;
+  padding: 0 8px;
+  font-size: 13px;
+  line-height: 2;
 }
 .weui-btn_mini {
   margin-right: 16px;

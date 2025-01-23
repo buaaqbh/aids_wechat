@@ -13,5 +13,29 @@
                 </view>
             </view>
         </view>
+
+        <view class="weui-panel">
+            <view class="weui-panel__hd" style="display: flex; justify-content: space-between; align-items: center;">
+                <text>数据传输</text>
+                <button class="weui-btn mini-btn" type="primary" size="mini" bindtap="sendHexData">发送数据</button>
+            </view>
+            <view class="weui-panel__bd">
+                <view class="weui-cells weui-cells_form">
+                    <view class="weui-cell">
+                        <view class="weui-cell__bd">
+                            <textarea class="weui-textarea" placeholder="请输入要发送的hex数据" value="{{sendData}}" bindinput="onSendDataInput" style="height: 3.3em;" />
+                        </view>
+                    </view>
+                    <view class="weui-cell">
+                        <view class="weui-cell__bd">
+                            <view class="weui-textarea received-data" style="height: 6.6em; background-color: #f8f8f8; padding: 8px;">
+                                <text>接收的数据：</text>
+                                <text>{{receivedData}}</text>
+                            </view>
+                        </view>
+                    </view>
+                </view>
+            </view>
+        </view>
     </view>
 </view>
