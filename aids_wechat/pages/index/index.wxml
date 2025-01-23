@@ -8,7 +8,14 @@
   </view>
 
   <view class="page__bd">
-    <view class="weui-panel">
+    <scroll-view 
+      scroll-y 
+      class="weui-panel"
+      refresher-enabled="{{true}}"
+      refresher-triggered="{{isRefreshing}}"
+      bindrefresherrefresh="onPullRefresh"
+      bindrefresherrestore="onPullRestore"
+    >
       <view class="weui-panel__bd">
         <view class="weui-media-box_text" wx:if="{{devices.length > 0}}">
           <view class="weui-media-box weui-media-box_appmsg" 
@@ -26,17 +33,9 @@
                 <view class="weui-media-box__info__meta">信号强度: {{item.RSSI}}dBm</view>
               </view>
             </view>
-            <view class="weui-cell__ft weui-cell__ft_in-access"></view>
           </view>
         </view>
-        <view class="weui-loadmore" wx:elif="{{scanning}}">
-          <view class="weui-loading"></view>
-          <view class="weui-loadmore__tips">搜索中...</view>
-        </view>
-        <view class="weui-loadmore weui-loadmore_line" wx:else>
-          <view class="weui-loadmore__tips weui-loadmore__tips_in-line">暂无设备</view>
-        </view>
       </view>
-    </view>
+    </scroll-view>
   </view>
 </view>

@@ -2,13 +2,26 @@
 
 .page {
   background-color: #f8f8f8;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .page__hd {
-  padding: 15px;
+  padding: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
+}
+
+.page__bd {
+  flex: 1;
+  overflow: hidden;
+}
+
+.weui-panel {
+  height: 100%;
 }
 
 .page__title {

@@ -1,7 +1,8 @@
 Page({
   data: {
     devices: [],
-    scanning: false
+    scanning: false,
+    isRefreshing: false
   },
 
   onLoad() {
@@ -9,9 +10,14 @@ Page({
   },
 
   startScan() {
-    if (this.data.scanning) return
+    console.log('准备开始扫描蓝牙设备')
+    if (this.data.scanning) {
+      console.log('已在扫描中，忽略此次扫描请求')
+      return
+    }
 
     this.setData({ scanning: true, devices: [] })
+    console.log('开始扫描蓝牙设备')
 
     wx.startBluetoothDevicesDiscovery({
       success: (res) => {
@@ -46,8 +52,16 @@ Page({
   },
 
   stopScan() {
-    wx.stopBluetoothDevicesDiscovery()
-    this.setData({ scanning: false })
+    console.log('停止扫描蓝牙设备')
+    wx.stopBluetoothDevicesDiscovery({
+      success: () => {
+        console.log('停止扫描成功')
+        this.setData({ scanning: false })
+      },
+      fail: (error) => {
+        console.error('停止扫描失败:', error)
+      }
+    })
   },
 
   connectDevice(e) {
@@ -76,6 +90,29 @@ Page({
         })
       }
     })
+  },
+
+  onUnload() {
+    this.stopScan()
+  },
+  onPullRefresh() {
+    this.setData({ isRefreshing: true })
+    console.log('触发下拉刷新，当前扫描状态:', this.data.scanning)
+    if (this.data.scanning) {
+      console.log('正在扫描中，停止扫描')
+      this.stopScan()
+    } else {
+      console.log('未在扫描中，开始扫描')
+      this.startScan()
+    }
+    setTimeout(() => {
+      this.setData({ isRefreshing: false })
+    }, 200)
+  },
+
+  onPullRestore() {
+    console.log('下拉刷新被复位')
+    this.setData({ isRefreshing: false })
   },
 
   onUnload() {
