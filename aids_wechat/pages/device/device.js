@@ -211,7 +211,13 @@ Page({
                     icon: 'success'
                 })
                 wx.onBLECharacteristicValueChange((res) => {
-                    console.log('收到设备数据:', res.value)
+                    const arrayBuffer = res.value;
+                    console.log('原始字节数据:', arrayBuffer);
+                    const hexData = Array.prototype.map.call(
+                        new Uint8Array(res.value),
+                        x => ('00' + x.toString(16)).slice(-2)
+                    ).join(' ');
+                    console.log('收到设备数据(hex):', hexData)
                 })
             },
             fail: (error) => {
@@ -223,6 +229,76 @@ Page({
                 })
             }
         })
+    },
+
+    // 将字符串转换为字节数组
+    stringToBytes(str) {
+        const bytes = [];
+        for (let i = 0; i < str.length; i++) {
+            bytes.push(str.charCodeAt(i));
+        }
+        return bytes;
+    },
+
+    // 将参数转换为指定格式
+    convertParams(byteList) {
+        const groups = [];
+        for (let i = 0; i < byteList.length; i += 4) {
+            groups.push(byteList.slice(i, i + 4));
+        }
+
+        const result = groups.map(group => {
+            // 反转字节顺序（小端模式）
+            const reversedGroup = group.slice().reverse();
+            const hexStr = reversedGroup.map(b => b.toString(16).padStart(2, '0')).join('');
+            return `0x${hexStr}`;
+        });
+
+        const strResult = result.join(',');
+        return this.stringToBytes(strResult);
+    },
+
+    // 将命令字符串转换为特定格式的字节数组
+    convertCmdToBytes(cmdStr, params = null) {
+        // 将命令字符串转换为字节数组
+        const cmdBytes = this.stringToBytes(cmdStr);
+
+        // 计算长度（从0xD0到命令字符串结束）
+        // 长度包括：0xD0 + 0x01 + cmdBytes
+        let cmdLength = cmdBytes.length + 2; // 2个固定字节（0xD0和0x01）
+        if (params && params.length > 0) {
+            cmdLength += 1 + params.length; // 加上参数分隔符和参数长度
+        }
+
+        // 创建带有头部的字节数组
+        const result = [
+            0xA0, // 命令代码
+            cmdLength, // 长度（不包括前两个字节和校验和）
+            0xD0, // 固定字节1
+            0x01 // 固定字节2
+        ];
+
+        // 添加命令字符串字节
+        result.push(...cmdBytes);
+
+        // 如果有参数，添加参数
+        if (params && params.length > 0) {
+            result.push(0x7c); // 参数分隔符
+            result.push(...params);
+        }
+
+        // 计算校验和（从第三个字节到结束）
+        const checksum = result.slice(2).reduce((sum, byte) => sum + byte, 0) & 0xFF;
+
+        // 添加校验和
+        result.push(checksum);
+
+        return new Uint8Array(result).buffer;
+    },
+
+    // 将 ArrayBuffer 转换为16进制字符串
+    arrayBufferToHex(buffer) {
+        return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join(' ');
     },
 
     // 发送命令到设备
@@ -239,12 +315,12 @@ Page({
         }
 
         // 将命令转换为ArrayBuffer格式
-        const buffer = new ArrayBuffer(command.length)
-        const dataView = new DataView(buffer)
-        for (let i = 0; i < command.length; i++) {
-            dataView.setUint8(i, command.charCodeAt(i))
-        }
+        const buffer = this.convertCmdToBytes(command);
 
+        console.log('命令数据(hex):', this.arrayBufferToHex(buffer))
+        console.log('发送命令:', command)
+
+        // 发送到设备
         wx.writeBLECharacteristicValue({
             deviceId: this.data.deviceId,
             serviceId: this.data.selectedService,
@@ -276,8 +352,11 @@ Page({
         })
 
         // 构建命令数据
-        const command = enabled ? [0x01, 0x01] : [0x01, 0x00] // 0x01表示算法控制命令，第二个字节1表示开，0表示关
+        const cmdStr = 'ym_algo'; // 算法控制命令
+        const params = this.convertParams([enabled ? 0x01 : 0x00]); // 参数：1表示开启，0表示关闭
+        const buffer = this.convertCmdToBytes(cmdStr, params);
 
+        console.log('命令数据(hex):', this.arrayBufferToHex(buffer))
         console.log('发送算法控制命令:', enabled ? '开启' : '关闭')
 
         // 发送到设备
@@ -285,7 +364,8 @@ Page({
             deviceId: this.data.deviceId,
             serviceId: this.data.selectedService,
             characteristicId: this.data.selectedCharacteristic,
-            value: new Uint8Array(command).buffer,
+            value: buffer,
+            writeType: 'writeNoResponse', // 添加 writeType
             success: () => {
                 wx.showToast({
                     title: enabled ? '算法已开启' : '算法已关闭',
@@ -314,9 +394,9 @@ Page({
                 this.setData({
                     connected: false
                 })
-                //wx.navigateBack({
-                //  delta: 1
-                //})
+                wx.navigateBack({
+                    delta: 1
+                })
             }
         })
     },
