@@ -302,23 +302,21 @@ Page({
     },
 
     // 发送命令到设备
-    sendCommand(e) {
-        const command = e.currentTarget.dataset.command
+    sendCommand(cmdStr, params = null) {
         if (!this.data.connected) {
             console.log('设备未连接，无法发送命令')
             wx.showToast({
                 title: '设备未连接',
                 icon: 'none'
             })
-            console.log('设备未连接')
             return
         }
 
-        // 将命令转换为ArrayBuffer格式
-        const buffer = this.convertCmdToBytes(command);
+        console.log('发送命令:', cmdStr, params ? `参数: ${this.arrayBufferToHex(new Uint8Array(params).buffer)}` : '')
 
+        // 将命令转换为ArrayBuffer格式
+        const buffer = this.convertCmdToBytes(cmdStr, params);
         console.log('命令数据(hex):', this.arrayBufferToHex(buffer))
-        console.log('发送命令:', command)
 
         // 发送到设备
         wx.writeBLECharacteristicValue({
@@ -326,21 +324,16 @@ Page({
             serviceId: this.data.selectedService,
             characteristicId: this.data.selectedCharacteristic,
             value: buffer,
+            writeType: 'writeNoResponse',
             success: () => {
-                console.log('命令发送成功:', command)
-                wx.showToast({
-                    title: '命令发送成功',
-                    icon: 'success'
-                })
                 console.log('命令发送成功')
             },
             fail: (error) => {
-                console.error('命令发送失败:', error, '命令:', command)
+                console.error('命令发送失败:', error)
                 wx.showToast({
-                    title: '命令发送失败',
-                    icon: 'none'
+                    title: '发送失败',
+                    icon: 'error'
                 })
-                console.log('命令发送失败')
             }
         })
     },
@@ -353,31 +346,17 @@ Page({
 
         // 构建命令数据
         const cmdStr = 'ym_algo'; // 算法控制命令
-        const params = this.convertParams([enabled ? 0x01 : 0x00]); // 参数：1表示开启，0表示关闭
-        const buffer = this.convertCmdToBytes(cmdStr, params);
+        const rawParams = [enabled ? 0x01 : 0x00]; // 参数：1表示开启，0表示关闭
+        const params = this.convertParams(rawParams); // 转换参数格式
 
-        console.log('命令数据(hex):', this.arrayBufferToHex(buffer))
-        console.log('发送算法控制命令:', enabled ? '开启' : '关闭')
+        // 发送命令
+        this.sendCommand(cmdStr, params);
 
-        // 发送到设备
-        wx.writeBLECharacteristicValue({
-            deviceId: this.data.deviceId,
-            serviceId: this.data.selectedService,
-            characteristicId: this.data.selectedCharacteristic,
-            value: buffer,
-            writeType: 'writeNoResponse', // 添加 writeType
-            success: () => {
-                wx.showToast({
-                    title: enabled ? '算法已开启' : '算法已关闭',
-                    icon: 'success'
-                })
-            },
-            fail: (error) => {
-                console.error('发送算法控制命令失败:', error)
-                wx.showToast({
-                    title: '设置失败',
-                    icon: 'error'
-                })
+        // 显示结果提示
+        wx.showToast({
+            title: enabled ? '算法已开启' : '算法已关闭',
+            icon: 'success',
+            fail: () => {
                 // 恢复开关状态
                 this.setData({
                     algorithmEnabled: !enabled
