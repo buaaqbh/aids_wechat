@@ -373,9 +373,12 @@ Page({
                 this.setData({
                     connected: false
                 })
-                wx.navigateBack({
-                    delta: 1
-                })
+                // 添加延时，确保错误提示信息能够显示
+                setTimeout(() => {
+                    wx.navigateBack({
+                        delta: 1
+                    })
+                }, 1500) // 延时1.5秒
             }
         })
     },
