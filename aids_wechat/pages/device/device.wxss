@@ -48,6 +48,8 @@
 }
 
 .button-sp-area {
+  display: flex;
+  align-items: center;
   padding: 15px;
   display: grid;
   grid-template-columns: repeat(3, minmax(90px, 1fr));
@@ -58,13 +60,20 @@
   margin: 0 auto;
 }
 
+.control-text {
+    font-size: 16px;
+    margin-right: 10px;
+}
+
+/* 自定义 switch 大小 */
+.button-sp-area switch {
+    transform: scale(0.8);
+    margin: -6px 0;  /* 调整垂直间距，防止缩放后占用过多空间 */
+}
+
 .weui-btn.mini-btn:last-child {
   margin-right: 0;
 }
 .weui-btn_mini {
   margin-right: 16px;
 }
-
-
-
-

@@ -1,19 +1,17 @@
 <view class="page">
-  <view class="page__hd">
-    <view class="page__title">设备控制</view>
-    <view class="page__desc">{{deviceId}}</view>
-  </view>
-
-  <view class="page__bd">
-    <view class="weui-panel">
-      <view class="weui-panel__hd">发送命令</view>
-      <view class="weui-panel__bd">
-        <view class="button-sp-area">
-          <button class="weui-btn weui-btn_mini" type="primary" size="" bindtap="sendCommand" data-command="volume_up">音量+</button>
-          <button class="weui-btn weui-btn_mini" type="primary" size="mini" bindtap="sendCommand" data-command="volume_down">音量-</button>
-          <button class="weui-btn weui-btn_mini" type="primary" size="mini" bindtap="sendCommand" data-command="mode_switch">模式切换</button>
-        </view>
-      </view>
+    <view class="page__hd">
+        <view class="page__title">设备控制</view>
+        <view class="page__desc">{{deviceId}}</view>
     </view>
-  </view>
+
+    <view class="page__bd">
+        <view class="weui-panel">
+            <view class="weui-panel__bd">
+                <view class="button-sp-area">
+                    <text class="control-text">算法开关</text>
+                    <switch checked="{{algorithmEnabled}}" bindchange="onAlgorithmChange" />
+                </view>
+            </view>
+        </view>
+    </view>
 </view>
