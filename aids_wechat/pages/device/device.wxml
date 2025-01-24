@@ -5,7 +5,7 @@
     </view>
 
     <view class="page__bd">
-        <view class="weui-panel">
+        <view class="weui-panel" style="margin-top: 10px;">
             <view class="weui-panel__bd">
                 <view class="button-sp-area">
                     <text class="control-text">算法开关</text>
@@ -17,7 +17,7 @@
         <view class="weui-panel">
             <view class="weui-panel__hd" style="display: flex; justify-content: space-between; align-items: center;">
                 <view style="flex-grow: 5;">数据传输</view>
-                <button class="weui-btn mini-btn" style="flex-shrink: 1;" type="primary" size="mini" bindtap="sendHexData">发送数据</button>
+                <button class="weui-btn mini-btn" style="flex-shrink: 1;" type="primary" size="mini" bindtap="sendHexRawData">发送数据</button>
             </view>
             <view class="weui-panel__bd">
                 <view class="weui-cells weui-cells_form">

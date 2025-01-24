@@ -34,7 +34,6 @@ Page({
                     title: '连接成功',
                     icon: 'success'
                 });
-                this.enableNotification();
             })
             .catch(error => {
                 wx.hideLoading();
@@ -45,20 +44,6 @@ Page({
                 });
                 this.disconnectAndGoBack();
             });
-    },
-
-
-    enableNotification() {
-        this.bleManager.onDataReceived((data) => {
-            const hexData = Array.prototype.map.call(
-                new Uint8Array(data),
-                x => ('00' + x.toString(16)).slice(-2)
-            ).join(' ');
-            console.log('收到设备数据(hex):', hexData);
-            this.setData({
-                receivedData: hexData
-            });
-        });
     },
 
     // 将字符串转换为字节数组
@@ -131,8 +116,8 @@ Page({
         return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join(' ');
     },
 
-    // 发送命令到设备
-    sendCommand(cmdStr, params = null) {
+    // 发送命令到设备（带响应处理）
+    sendCommand(cmdStr, params = null, failCallback = null, dataCallback = null) {
         if (!this.data.connected) {
             console.log('设备未连接，无法发送命令')
             wx.showToast({
@@ -148,16 +133,26 @@ Page({
         const buffer = this.convertCmdToBytes(cmdStr, params);
         console.log('命令数据(hex):', this.arrayBufferToHex(buffer))
 
-        this.bleManager.sendCommand(cmdStr, params)
-            .then(() => {
-                console.log('命令发送成功');
+        this.bleManager.sendCommand(cmdStr, params, 2000, failCallback, dataCallback)
+            .then((response) => {
+                //console.log('命令执行成功，响应数据:', response);
+                wx.showToast({
+                    title: '操作成功',
+                    icon: 'success'
+                });
+                return response;
             })
             .catch(error => {
-                console.error('命令发送失败:', error);
+                //console.error('命令执行失败:', error);
+                const errorMsg = error.message.includes('超时') ? '设备响应超时' : '操作失败';
                 wx.showToast({
-                    title: '发送失败',
-                    icon: 'error'
+                    title: errorMsg,
+                    icon: 'none'
                 });
+                throw error;
+            })
+            .finally(() => {
+                wx.hideLoading();
             });
     },
 
@@ -167,13 +162,24 @@ Page({
             algorithmEnabled: enabled
         })
 
-        // 构建命令数据
         const cmdStr = 'ym_algo'; // 算法控制命令
         const rawParams = [enabled ? 0x01 : 0x00]; // 参数：1表示开启，0表示关闭
         const params = this.convertParams(rawParams); // 转换参数格式
 
+        dataCallback = (response) => {
+            console.log('响应数据(hex):', this.arrayBufferToHex(response))
+        }
+
+        failCallback = (error) => {
+            console.error('命令执行失败:', error);
+            const errorMsg = error.message.includes('超时') ? '设备响应超时' : '操作失败';
+            wx.showToast({
+                title: errorMsg,
+                icon: 'none'
+            });
+        }
         // 发送命令
-        this.sendCommand(cmdStr, params);
+        this.sendCommand(cmdStr, params, failCallback, dataCallback);
 
         // 显示结果提示
         wx.showToast({
@@ -196,7 +202,7 @@ Page({
     },
 
     // 发送hex数据
-    sendHexData() {
+    sendHexRawData() {
         if (!this.data.connected) {
             wx.showToast({
                 title: '设备未连接',
@@ -223,7 +229,13 @@ Page({
         const params = this.convertParams(dataBuffer); // 转换参数格式
 
         // 发送命令
-        this.sendCommand(cmdStr, params)
+        const dataCallback = (response) => {
+            const hexString = response.map(b => b.toString(16).padStart(2, '0')).join(' ');
+            this.setData({
+                receivedData: hexString
+            });
+        };
+        this.sendCommand(cmdStr, params, null, dataCallback)
     },
 
     // 断开连接并返回

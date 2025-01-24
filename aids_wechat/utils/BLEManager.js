@@ -142,7 +142,7 @@ class BLEManager {
                     console.log('通知启用成功');
                     wx.offBLECharacteristicValueChange();
                     wx.onBLECharacteristicValueChange((res) => {
-                        console.log('收到数据:', res.value);
+                        console.log('收到数据(HEX):', this.arrayBufferToHex(res.value));
                         if (this.dataCallback) {
                             this.dataCallback(res.value);
                         }
@@ -163,25 +163,117 @@ class BLEManager {
         this.dataCallback = callback;
     }
 
-    // 发送命令
-    sendCommand(cmdStr, params = null) {
+    // 发送命令（带响应超时）
+    sendCommand(cmdStr, params = null, timeout = 2000, failCallback = null, resDataCallback = null) {
         if (!this.connected) {
             throw new Error('设备未连接');
         }
 
         const buffer = this.convertCmdToBytes(cmdStr, params);
 
+        // 保存原始回调引用
+        const originalCallback = this.dataCallback;
+
         return new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+                this.dataCallback = originalCallback; // 恢复原始回调
+                const err = new Error(`命令响应超时（${timeout}ms）`);
+                if (typeof failCallback === 'function') {
+                    failCallback(err);
+                }
+                reject(err);
+            }, timeout);
+
+            // 配置临时数据回调
+            const tempDataHandler = (data) => {
+                try {
+                    // 先解析响应数据
+                    const response = this.parseResponse(data);
+
+                    // 只有解析成功后才执行以下操作
+                    clearTimeout(timeoutId);
+
+                    // 先执行回调再恢复原始回调
+                    if (typeof resDataCallback === 'function') {
+                        resDataCallback(response);
+                    }
+
+                    // 确保在回调执行完成后恢复原始回调
+                    this.dataCallback = originalCallback;
+                    resolve(response);
+                } catch (error) {
+                    clearTimeout(timeoutId);
+                    this.dataCallback = originalCallback;
+
+                    // 错误处理回调
+                    if (typeof failCallback === 'function') {
+                        failCallback(error);
+                    }
+                    reject(error);
+                }
+            };
+
+            this.dataCallback = tempDataHandler;
+
+            // 执行BLE写入操作
             wx.writeBLECharacteristicValue({
                 deviceId: this.deviceId,
                 serviceId: this.selectedService,
                 characteristicId: this.selectedCharacteristic,
                 value: buffer,
                 writeType: 'writeNoResponse',
-                success: () => resolve(),
-                fail: (error) => reject(error)
+                success: () => {
+                    console.log('命令发送成功，等待响应...');
+                },
+                fail: (error) => {
+                    clearTimeout(timeoutId);
+                    this.dataCallback = originalCallback;
+                    if (typeof failCallback === 'function') {
+                        failCallback(error);
+                    }
+                    reject(error);
+                }
             });
         });
+    }
+
+    // 解析设备响应
+    parseResponse(data) {
+        const arr = new Uint8Array(data);
+        if (arr.length < 5) {
+            throw new Error('响应数据长度不足, 至少需要5字节');
+        }
+
+        // 检查包头（0xB0）
+        if (arr[0] !== 0xB0) {
+            throw new Error(`无效包头(预期0xB0,实际0x${arr[0].toString(16).padStart(2, '0')})`);
+        }
+
+        // 检查固定字节（0xD0 0x01）
+        if (arr[2] !== 0xD0 || arr[3] !== 0x01) {
+            throw new Error(`无效固定字节(位置2:0x${arr[2].toString(16).padStart(2, '0')}, 位置3:0x${arr[3].toString(16).padStart(2, '0')})`);
+        }
+
+        // 验证数据长度
+        const dataLength = arr[1];
+        if (dataLength + 3 > arr.length) {
+            throw new Error(`数据长度异常（声明长度:${dataLength}，实际长度:${arr.length-3})`);
+        }
+
+        // 计算校验和（从第2字节到倒数第2字节）
+        const checksumCalculated = arr.slice(2, -1).reduce((sum, byte) => sum + byte, 0) & 0xFF;
+        const checksumReceived = arr[arr.length - 1];
+        if (checksumCalculated !== checksumReceived) {
+            throw new Error(`校验和验证失败（计算值:0x${checksumCalculated.toString(16).padStart(2, '0')}，接收值:0x${checksumReceived.toString(16).padStart(2, '0')})`);
+        }
+
+        // 提取有效数据（从第4字节开始，取dataLength-2字节）
+        const dataStart = 4;
+        const dataEnd = dataStart + dataLength - 2;
+
+        // 自动适配实际数据长度（当声明长度超过实际数据时）
+        const safeDataEnd = Math.min(dataEnd, arr.length - 1);
+        return Array.from(arr.slice(dataStart, safeDataEnd));
     }
 
     // 断开连接
