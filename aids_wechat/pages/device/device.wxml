@@ -16,8 +16,8 @@
 
         <view class="weui-panel">
             <view class="weui-panel__hd" style="display: flex; justify-content: space-between; align-items: center;">
-                <text>数据传输</text>
-                <button class="weui-btn mini-btn" type="primary" size="mini" bindtap="sendHexData">发送数据</button>
+                <view style="flex-grow: 5;">数据传输</view>
+                <button class="weui-btn mini-btn" style="flex-shrink: 1;" type="primary" size="mini" bindtap="sendHexData">发送数据</button>
             </view>
             <view class="weui-panel__bd">
                 <view class="weui-cells weui-cells_form">
