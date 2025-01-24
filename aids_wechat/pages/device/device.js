@@ -212,6 +212,7 @@ Page({
                     title: '连接成功',
                     icon: 'success'
                 })
+                wx.offBLECharacteristicValueChange(); // 避免重复监听
                 wx.onBLECharacteristicValueChange((res) => {
                     const arrayBuffer = res.value;
                     console.log('原始字节数据:', arrayBuffer);
@@ -402,9 +403,10 @@ Page({
         for (let i = 0; i < dataBuffer.length; i++) {
             dataBuffer[i] = parseInt(hexString.substr(i * 2, 2), 16)
         }
+        const params = this.convertParams(dataBuffer); // 转换参数格式
 
         // 发送命令
-        this.sendCommand(cmdStr, dataBuffer)
+        this.sendCommand(cmdStr, params)
     },
 
     // 断开连接并返回
@@ -429,5 +431,6 @@ Page({
         wx.closeBLEConnection({
             deviceId: this.data.deviceId
         })
+        wx.offBLECharacteristicValueChange(); // 新增：移除全局监听
     }
 })
